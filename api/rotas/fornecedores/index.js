@@ -2,14 +2,19 @@
 const roteador = require('express').Router() // Ira agrupar as rotas e irá esportar.
 const TabelaFornecedor = require('./TabelaFornecedor')
 const Fornecedor = require('./Fornecedor')
+const SerializadorFornecedor = require('../../Serializador').SerializadorFornecedor
 
 roteador.get('/', async (requisicao, resposta) => {
     // como estamos trabalhando com as serviços, externos estamos trabalhando async e await
     const resultados = await TabelaFornecedor.listar()
     resposta.status(200)
-    resposta.send(
-        JSON.stringify(resultados)
+    const serializador = new SerializadorFornecedor(
+        resposta.getHeader('Content-Type')
     )
+    resposta.send(
+        serializador.serializar(resultados) 
+    )
+    //JSON.stringify(resultados)
 })
 
 roteador.post('/', async (requisicao, resposta, proximo) => {
@@ -17,13 +22,17 @@ roteador.post('/', async (requisicao, resposta, proximo) => {
    
     try{
         const dadosRecebidos = requisicao.body;
-        const forncedor = new Fornecedor(dadosRecebidos)
-        await forncedor.criar()
+        const fornecedor = new Fornecedor(dadosRecebidos)
+        await fornecedor.criar()
         resposta.status(201)
-        resposta.send(
-            JSON.stringify(forncedor)
+        const serializador = new SerializadorFornecedor(
+            resposta.getHeader('Content-Type')
         )
-
+        resposta.send(
+            serializador.serializar(fornecedor) 
+        )
+        // JSON.stringify(fornecedor)
+            
     }catch(erro){
         proximo(erro)
     }
@@ -33,12 +42,16 @@ roteador.post('/', async (requisicao, resposta, proximo) => {
 roteador.get('/:idFornecedor', async (requisicao, resposta, proximo) => {
     try{
         const id = requisicao.params.idFornecedor;
-        const forncedor = new Fornecedor({id:id})
-        await forncedor.carregar()
+        const fornecedor = new Fornecedor({id:id})
+        await fornecedor.carregar()
         resposta.status(200)
-        resposta.send(
-            JSON.stringify(forncedor)
+        const serializador = new SerializadorFornecedor(
+            resposta.getHeader('Content-Type')
         )
+        resposta.send(
+            serializador.serializar(fornecedor) 
+        )
+        // JSON.stringify(fornecedor)
 
     }catch(erro){
         proximo(erro)
@@ -53,8 +66,8 @@ roteador.put('/:idFornecedor', async (requisicao, resposta, proximo) => {
         const dadosRecebidos = requisicao.body;
         const dados = Object.assign({},dadosRecebidos, {id:id} )
         const fornecedor = new Fornecedor(dados)
-        resposta.status(204) // Sucesso, sem conteúdo na resposta.
         await fornecedor.atualizar()// 
+        resposta.status(204) // Sucesso, sem conteúdo na resposta.
         resposta.end()
         
 
